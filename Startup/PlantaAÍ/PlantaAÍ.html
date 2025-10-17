@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PlantaAí 🌿</title>
+  <style>
+    /* Reset & base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      overflow-x: hidden;
+      position: relative; /* adicionado para z-index funcionar */
+      z-index: 0;
+    }
+
+    body {
+      background-image: url('https://backiee.com/static/wpdb/wallpapers/1920x1080/282001.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      padding-bottom: 60px; 
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(18, 18, 18, 0.8);
+      z-index: -1;
+    }
+
+    header, nav, main, footer, section {
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      text-align: center;
+      padding: 60px 20px 30px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #a5d6a7;
+      animation: fadeIn 1.2s ease;
+    }
+
+    header h1 {
+      font-size: 40px;
+    }
+
+    header p {
+      font-size: 18px;
+      color: #c8e6c9;
+    }
+
+    nav {
+      background: rgba(20, 30, 20, 0.9);
+      padding: 15px 0;
+      text-align: center;
+    }
+
+    nav a {
+      margin: 0 15px;
+      color: #aed581;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s ease;
+    }
+
+    nav a:hover {
+      color: #dcedc8;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    section {
+      background: rgba(30, 30, 30, 0.9);
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      animation: slideIn 1s ease;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+
+    input, textarea {
+      background: #1e1e1e;
+      color: #eee;
+      border: 1px solid #555;
+    }
+
+    button {
+      background-color: #66bb6a;
+      color: white;
+      font-weight: bold;
+      transition: background-color 0.3s, transform 0.2s;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #81c784;
+      transform: scale(1.03);
+    }
+
+    .muda-item {
+      background-color: #2a2a2a;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #3a3a3a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #ddd;
+    }
+
+    .muda-item button {
+      background-color: #e57373;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+
+    .muda-item button:hover {
+      background-color: #ef5350;
+    }
+
+    footer {
+      padding: 10px 0;
+      background: rgba(0, 0, 0, 0.6);
+      text-align: center;
+      font-size: 14px;
+      color: #aaa;
+      position: static;
+      margin-top: 20px;
+    }
+
+    #opcoes-pagamento {
+      background-color: rgba(40, 70, 40, 0.85);
+      padding: 20px 25px;
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+      max-width: 320px;
+      margin-top: 15px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #dcedc8;
+    }
+
+    #opcoes-pagamento p {
+      font-weight: 600;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    #pagamento {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1.8px solid #8bc34a;
+      background-color: #2a4d2a;
+      color: #e6f2d6;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.3s ease, background-color 0.3s ease;
+    }
+
+    #pagamento:hover,
+    #pagamento:focus {
+      border-color: #c5e1a5;
+      background-color: #3b623b;
+      cursor: pointer;
+    }
+
+    #btn-confirmar {
+      margin-top: 18px;
+      background-color: #8bc34a;
+      color: #1b3600;
+      font-weight: 700;
+      padding: 12px 0;
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      box-shadow: 0 4px 10px rgba(139, 195, 74, 0.7);
+      transition: background-color 0.3s ease, transform 0.15s ease;
+      cursor: pointer;
+    }
+
+    #btn-confirmar:hover {
+      background-color: #aedc66;
+      transform: scale(1.05);
+    }
+
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .muda-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>PlantaAí 🌱</h1>
+    <p>Doe, troque e encontre mudas perto de você</p>
+  </header>
+
+  <nav>
+    <a href="#form">Cadastrar Muda</a>
+    <a href="#lista">Ver Mudas</a>
+    <a href="#sobre">Sobre</a>
+    <a href="#plano-premium">Plano Premium</a>
+  </nav>
+
+  <main>
+    <section id="carrossel-anuncios" style="max-width: 900px; margin: 20px auto; background: rgba(46, 125, 50, 0.85); border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.4); padding: 15px; color: #dcedc8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; overflow: hidden;">
+        <div class="carrossel-wrapper" style="display: flex; transition: transform 0.6s ease-in-out; will-change: transform;">
+          <div class="anuncio" style="min-width: 100%; padding: 20px; box-sizing: border-box; font-size: 18px; line-height: 1.4; text-align: center;">
+            <strong>Patrocinador:</strong> Jardim Verde - Adquira suas mudas com <u>desconto especial</u> e frete grátis para sua região!
+          </div>
+          <div class="anuncio" style="min-width: 100%; padding: 20px; box-sizing: border-box; font-size: 18px; line-height: 1.4; text-align: center;">
+            <strong>Usuário:</strong> Troco mudas de ervas medicinais — <em>Contato:</em> (99) 99999-9999. Plantas fresquinhas e cultivadas com carinho!
+          </div>
+          <div class="anuncio" style="min-width: 100%; padding: 20px; box-sizing: border-box; font-size: 18px; line-height: 1.4; text-align: center;">
+            <strong>Patrocinador:</strong> EcoPlant - Compre adubos orgânicos com entrega grátis e ajude o planeta a florescer!
+          </div>
+        </div>
+      
+        <!-- Botões de navegação -->
+        <button id="prevBtn" aria-label="Anterior" style="position: absolute; top: 50%; left: 10px; transform: translateY(-50%); background: rgba(255,255,255,0.3); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 20px; color: #2e7d32;">&#10094;</button>
+        <button id="nextBtn" aria-label="Próximo" style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: rgba(255,255,255,0.3); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 20px; color: #2e7d32;">&#10095;</button>
+      
+        <!-- Indicadores -->
+        <div id="indicadores" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px;">
+          <span class="indicador ativo" style="width: 12px; height: 12px; background: #aedc66; border-radius: 50%; cursor: pointer; display: block;"></span>
+          <span class="indicador" style="width: 12px; height: 12px; background: rgba(174,220,102,0.5); border-radius: 50%; cursor: pointer; display: block;"></span>
+          <span class="indicador" style="width: 12px; height: 12px; background: rgba(174,220,102,0.5); border-radius: 50%; cursor: pointer; display: block;"></span>
+        </div>
+      </section>
+
+    <section id="form" class="form-section">
+      <h2>Cadastrar Muda para Troca ou Doação</h2>
+      <form id="formulario">
+        <input type="text" id="nome" placeholder="Seu nome ou apelido" required />
+        <input type="text" id="bairro" placeholder="Bairro/Cidade" required />
+        <input type="text" id="planta" placeholder="Nome da planta" required />
+        <input type="text" id="contato" placeholder="Contato (WhatsApp ou Email)" required />
+        <textarea id="info" placeholder="Informações adicionais (opcional)"></textarea>
+        <button type="submit">Cadastrar Planta</button>
+      </form>
+    </section>
+
+    <section id="lista" class="list-section">
+      <h2>Mudas Disponíveis</h2>
+      <ul id="lista-mudas"></ul>
+    </section>
+
+    <section id="sobre" class="about-section">
+      <h2>Sobre o Projeto</h2>
+      <p>
+        O PlantaAí é um site criado para facilitar a troca de mudas, sementes e plantas entre pessoas que querem espalhar o verde pelas cidades.
+        Incentivamos o cultivo doméstico, hortas comunitárias e o contato com a natureza. Tudo de forma simples, gratuita e colaborativa.
+        Pedimos que todas as Informações cadastradas sejam preenchidas com seriedade.
+      </p>
+    </section>
+
+    <section id="plano-premium" class="about-section">
+      <h2>Plano Premium 🌟</h2>
+      <p>Para quem deseja apoiar o projeto e aproveitar vantagens exclusivas, o Plano Premium oferece:</p>
+      <ul style="margin-top: 15px; list-style: disc; padding-left: 20px;">
+        <li><strong>Destaque nos anúncios:</strong> suas mudas aparecerão primeiro na lista e com marcação especial.</li>
+        <li><strong>Acesso antecipado:</strong> às novas ferramentas e melhorias da plataforma.</li>
+        <li><strong>Filtros avançados:</strong> para encontrar mudas por localização, tipo ou disponibilidade.</li>
+        <li><strong>Selo Premium:</strong> que mostra seu apoio à comunidade verde.</li>
+        <li><strong>Eventos e sorteios exclusivos:</strong> participe de ações especiais só para membros Premium.</li>
+      </ul>
+      <p style="margin-top: 15px;">
+        O valor arrecadado é reinvestido no crescimento do projeto, melhoria do site e promoção de ações ecológicas.
+        Assine e ajude o PlantaAí a florescer ainda mais! 🌻
+      </p>
+
+      <p>
+        Quer dar destaque ao seu anúncio, ter acesso a recursos exclusivos e ajudar o PlantaAí a crescer?  
+        Assine nosso plano premium!
+      </p>
+      <ul style="margin-top: 15px; list-style: disc; padding-left: 20px;">
+        <li>Destaque nos anúncios — seu cadastro fica no topo da lista</li>
+        <li>Acesso a grupos exclusivos para troca e dicas</li>
+        <li>Participação em eventos VIP</li>
+        <li>Sem anúncios na sua página</li>
+      </ul>
+      <p style="margin-top: 15px; font-weight: bold;">Valor: R$ 19,90 / mês</p>
+      <button id="btn-assinar">Assinar Agora</button>
+
+      <div id="opcoes-pagamento" style="display:none; margin-top: 15px;">
+        <p>Escolha a forma de pagamento:</p>
+        <select id="pagamento">
+          <option value="pix">Pix</option>
+          <option value="cartao">Cartão de Crédito</option>
+          <option value="boleto">Boleto Bancário</option>
+        </select>
+        <button id="btn-confirmar">Confirmar</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 PlantaAí - Todos os direitos reservados
+  </footer>
+
+  <script>
+    // Script para manipular a lista de mudas (exemplo simples)
+    const formulario = document.getElementById('formulario');
+    const listaMudas = document.getElementById('lista-mudas');
+
+    formulario.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const nome = document.getElementById('nome').value.trim();
+      const bairro = document.getElementById('bairro').value.trim();
+      const planta = document.getElementById('planta').value.trim();
+      const contato = document.getElementById('contato').value.trim();
+      const info = document.getElementById('info').value.trim();
+
+      if (!nome || !bairro || !planta || !contato) {
+        alert('Por favor, preencha todos os campos obrigatórios.');
+        return;
+      }
+
+      const li = document.createElement('li');
+      li.classList.add('muda-item');
+      li.innerHTML = `
+        <div>
+          <strong>${planta}</strong> - ${bairro} <br/>
+          <small>Contato: ${contato} - ${nome}</small><br/>
+          <em>${info}</em>
+        </div>
+        <button>Remover</button>
+      `;
+
+      li.querySelector('button').addEventListener('click', () => {
+        listaMudas.removeChild(li);
+      });
+
+      listaMudas.appendChild(li);
+
+      formulario.reset();
+    });
+
+    // Mostrar opções de pagamento no Plano Premium
+    const btnAssinar = document.getElementById('btn-assinar');
+    const opcoesPagamento = document.getElementById('opcoes-pagamento');
+
+    btnAssinar.addEventListener('click', () => {
+      if (opcoesPagamento.style.display === 'none') {
+        opcoesPagamento.style.display = 'block';
+        btnAssinar.textContent = 'Cancelar';
+      } else {
+        opcoesPagamento.style.display = 'none';
+        btnAssinar.textContent = 'Assinar Agora';
+      }
+    });
+
+    // Confirmar pagamento (simples)
+    const btnConfirmar = document.getElementById('btn-confirmar');
+    btnConfirmar.addEventListener('click', () => {
+      const metodo = document.getElementById('pagamento').value;
+      alert(`Pagamento via ${metodo} confirmado! Obrigado pelo apoio 🌿`);
+      opcoesPagamento.style.display = 'none';
+      btnAssinar.textContent = 'Assinar Agora';
+    });
+
+    const carrosselWrapper = document.querySelector('#carrossel-anuncios .carrossel-wrapper');
+  const anuncios = document.querySelectorAll('#carrossel-anuncios .anuncio');
+  const totalAnuncios = anuncios.length;
+  const indicadores = document.querySelectorAll('#indicadores .indicador');
+  let indiceAtual = 0;
+
+  function atualizarCarrossel() {
+    carrosselWrapper.style.transform = `translateX(-${indiceAtual * 100}%)`;
+    indicadores.forEach((ind, i) => {
+      ind.style.background = i === indiceAtual ? '#aedc66' : 'rgba(174,220,102,0.5)';
+    });
+  }
+
+  function proximoAnuncio() {
+    indiceAtual = (indiceAtual + 1) % totalAnuncios;
+    atualizarCarrossel();
+  }
+
+  function anteriorAnuncio() {
+    indiceAtual = (indiceAtual - 1 + totalAnuncios) % totalAnuncios;
+    atualizarCarrossel();
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', proximoAnuncio);
+  document.getElementById('prevBtn').addEventListener('click', anteriorAnuncio);
+
+  indicadores.forEach((ind, i) => {
+    ind.addEventListener('click', () => {
+      indiceAtual = i;
+      atualizarCarrossel();
+    });
+  });
+
+  // Auto play a cada 5 segundos
+  let autoPlay = setInterval(proximoAnuncio, 5000);
+
+  // Para auto play se o usuário usar os controles
+  [document.getElementById('nextBtn'), document.getElementById('prevBtn'), ...indicadores].forEach(el => {
+    el.addEventListener('click', () => {
+      clearInterval(autoPlay);
+      autoPlay = setInterval(proximoAnuncio, 5000);
+    });
+  });
+  </script>
+</body>
+
+</html>
