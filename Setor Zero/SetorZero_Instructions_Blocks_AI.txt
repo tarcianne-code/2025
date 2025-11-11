@@ -1,0 +1,59 @@
+
+Setor Zero - Blocos com IA (detalhado)
+=====================================
+
+TELAS:
+- Screen1 (Tela_Inicial)
+- Tela1 (Capítulo 1 - Fábrica)
+- Tela_Escolhas (decisões com IA)
+- TelaFinalBoa
+- TelaFinalRuim
+
+COMPONENTES:
+Tela_Escolhas: Web1 (componente Web), LabelPrompt, ButtonOpt1/2/3, LabelAIExplain
+Global: IA_Ativa (boolean), currentContext (text)
+
+FLUXO (resumido):
+1) Screen1.ButtonNewGame.Click:
+   set IA_Ativa = true
+   open Tela1
+
+2) Tela1: player completa tarefas (coletar lixo)
+   - Quando SpriteLata.Click or collision:
+       reveal documento (SpriteDocumento.Visible = true)
+   - If player chooses "Ignorar":
+       open TelaFinalRuim (mensagem curta "Cuide da sua vida")
+   - If player chooses "Ler":
+       set currentContext = resumo do capitulo (texto)
+       open Tela_Escolhas
+
+3) Tela_Escolhas.Initialize:
+   - show three local placeholders on ButtonOpt1/2/3 like "Carregar..." 
+   - if IA_Ativa:
+       - create prompt by concatenating currentContext and the 3 option templates
+       - set Web1.Url = <API endpoint>
+       - set Web1.RequestHeaders to list of pairs:
+           "Content-Type" -> "application/json"
+           "Authorization" -> "Bearer " + YourApiKey
+       - set requestBody to JSON string (see README)
+       - call Web1.PostText(requestBody)
+   - else: populate buttons with offline phrases
+
+4) Web1.GotText:
+   - parse returned text; expected format: opt1||score||comment||opt2||score||comment||opt3||score||comment
+   - split and assign ButtonOpt1.Text = opt1, LabelAIExplain.Text = comment1 (or aggregate)
+   - decide which option has highest score (use score numeric)
+   - mark correctOption variable accordingly (optional)
+
+5) ButtonOptN.Click:
+   - if N == correctOption:
+       open TelaFinalBoa
+   - else:
+       open TelaFinalRuim
+
+ERRORS:
+- Web1.ErrorOccurred: fallback to offline phrases and notify player "Modo offline: respostas predefinidas usadas."
+
+TIPS:
+- Keep prompts concise to save tokens.
+- Limit response length in API call via max_tokens param.
