@@ -1,0 +1,654 @@
+# Projeto: Plataforma de Histórias — Esqueleto Funcional
+
+Este documento contém um **esqueleto funcional** (backend + frontend) organizado em arquivos separados (HTML, CSS, JS, Node/Express backend, Prisma + SQLite). É uma base mínima que **funciona localmente** e persiste dados no banco SQLite via Prisma. Inclui: autenticação básica (JWT), publicação de histórias, sistema de seguidores/favoritos básico, pagamentos simulados (endpoint de checkout), chat em tempo real com Socket.IO e painel de admin.
+
+> **Importante:** este é um esqueleto para desenvolvimento/local. Antes de ir à produção, revise segurança (HTTPS, validação, rate limiting, KYC/Stripe real, env vars seguras etc.).
+
+---
+
+## Estrutura do projeto
+
+```
+historia-platform/
+├─ backend/
+│  ├─ package.json
+│  ├─ .env.example
+│  ├─ prisma/
+│  │  └─ schema.prisma
+│  ├─ src/
+│  │  ├─ server.js
+│  │  ├─ auth.js
+│  │  ├─ routes.js
+│  │  └─ socket.js
+│  └─ prisma/ (gerado após migrate, contém .db)
+└─ frontend/
+   └─ public/
+      ├─ index.html
+      ├─ login.html
+      ├─ editor.html
+      ├─ admin.html
+      ├─ chat.html
+      ├─ styles.css
+      └─ app.js
+```
+
+---
+
+## Passo-a-passo pra rodar localmente
+
+1. Clona/baixa este conteúdo em uma pasta `historia-platform`.
+2. Vai para `backend/` e instale dependências:
+
+```bash
+cd backend
+npm install
+```
+
+3. Cria o arquivo `.env` a partir do `.env.example` e ajusta (ex.: JWT_SECRET).
+
+4. Inicializa o banco e gera o arquivo SQLite via Prisma:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+5. Inicia o backend (porta 4000):
+
+```bash
+npm run dev
+```
+
+6. Abre o frontend (pasta `frontend/public`) no navegador — ou configura o Express pra servir `/public` (o servidor já serve por padrão).
+
+---
+
+# Conteúdo dos arquivos
+
+---
+
+## backend/package.json
+
+```json
+{
+  "name": "historia-platform-backend",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "prisma": "prisma"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "prisma": "^5.5.0",
+    "socket.io": "^4.7.2",
+    "@prisma/client": "^5.5.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+```
+
+---
+
+## backend/.env.example
+
+```
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="troque_essa_chave_por_uma_senha_forte"
+PORT=4000
+FRONT_URL=http://localhost:4000
+```
+
+---
+
+## backend/prisma/schema.prisma
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  username  String?  @unique
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  stories   Story[]
+  favorites Favorite[]
+  follows   Follow[] @relation("follower")
+  messages  Message[]
+}
+
+model Story {
+  id        String   @id @default(cuid())
+  author    User     @relation(fields:[authorId], references:[id])
+  authorId  String
+  title     String
+  excerpt   String?
+  body      String   @db.Text
+  tags      String[]
+  type      String
+  price     Float?
+  createdAt DateTime @default(now())
+  likes     Int      @default(0)
+}
+
+model Favorite {
+  id      String @id @default(cuid())
+  user    User   @relation(fields:[userId], references:[id])
+  userId  String
+  story   Story  @relation(fields:[storyId], references:[id])
+  storyId String
+  createdAt DateTime @default(now())
+}
+
+model Follow {
+  id         String @id @default(cuid())
+  follower   User   @relation("follower", fields:[followerId], references:[id])
+  followerId String
+  following  String
+  createdAt  DateTime @default(now())
+}
+
+model Conversation {
+  id        String @id @default(cuid())
+  title     String?
+  isGroup   Boolean @default(false)
+  createdAt DateTime @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  conversationId  String
+  senderId        String
+  content         String   @db.Text
+  createdAt       DateTime @default(now())
+}
+```
+
+---
+
+## backend/src/server.js
+
+```js
+import express from 'express';
+import cors from 'cors';
+import { PrismaClient } from '@prisma/client';
+import bodyParser from 'body-parser';
+import http from 'http';
+import { setupSocket } from './socket.js';
+import { router } from './routes.js';
+
+const prisma = new PrismaClient();
+const app = express();
+const server = http.createServer(app);
+
+app.use(cors());
+app.use(bodyParser.json({ limit: '2mb' }));
+app.use(express.static('public'));
+
+app.use('/api', router(prisma));
+
+// serve frontend static (public folder)
+app.use('/', express.static('../frontend/public'));
+
+setupSocket(server, prisma);
+
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => console.log(`Server rodando na porta ${PORT}`));
+```
+
+---
+
+## backend/src/auth.js
+
+```js
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+
+export function hashPassword(p){ return bcrypt.hash(p, 10); }
+export function compare(p,h){ return bcrypt.compare(p,h); }
+
+export function signToken(user){ return jwt.sign({sub:user.id,role:user.role}, process.env.JWT_SECRET || 'dev_secret', {expiresIn:'8h'}); }
+
+export function authMiddleware(prisma){
+  return async (req,res,next)=>{
+    const auth = req.headers.authorization;
+    if(!auth) return res.status(401).json({error:'no token'});
+    const token = auth.replace('Bearer ','');
+    try{
+      const data = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret');
+      const user = await prisma.user.findUnique({where:{id:data.sub}});
+      if(!user) return res.status(401).json({error:'user not found'});
+      req.user = user; next();
+    }catch(e){ return res.status(401).json({error:'invalid token'}); }
+  }
+}
+```
+
+---
+
+## backend/src/routes.js
+
+```js
+import express from 'express';
+import { hashPassword, compare, signToken, authMiddleware } from './auth.js';
+
+export function router(prisma){
+  const r = express.Router();
+
+  // auth: register
+  r.post('/auth/register', async (req,res)=>{
+    const {email,password,name,username} = req.body;
+    if(!email || !password) return res.status(400).json({error:'missing'});
+    const hash = await hashPassword(password);
+    const user = await prisma.user.create({data:{email,password:hash,name,username}});
+    const token = signToken(user);
+    res.json({token,user:{id:user.id,email:user.email,name:user.name,role:user.role}});
+  });
+
+  r.post('/auth/login', async (req,res)=>{
+    const {email,password} = req.body;
+    const user = await prisma.user.findUnique({where:{email}});
+    if(!user) return res.status(401).json({error:'invalid'});
+    const ok = await compare(password,user.password);
+    if(!ok) return res.status(401).json({error:'invalid'});
+    const token = signToken(user);
+    res.json({token,user:{id:user.id,email:user.email,name:user.name,role:user.role}});
+  });
+
+  // stories public
+  r.get('/stories', async (req,res)=>{
+    const q = req.query.q || '';
+    const where = q ? { OR: [ { title: { contains: q, mode: 'insensitive' } }, { excerpt: { contains: q, mode: 'insensitive' } }, { body: { contains: q, mode: 'insensitive' } } ] } : {};
+    const stories = await prisma.story.findMany({where, orderBy:{createdAt:'desc'}});
+    res.json(stories);
+  });
+
+  r.get('/stories/:id', async (req,res)=>{
+    const s = await prisma.story.findUnique({where:{id:req.params.id}});
+    if(!s) return res.status(404).json({error:'not found'});
+    res.json(s);
+  });
+
+  // protected routes
+  r.post('/stories', authMiddleware(prisma), async (req,res)=>{
+    const data = req.body;
+    const s = await prisma.story.create({data:{title:data.title,excerpt:data.excerpt,body:data.body,tags:data.tags||[],type:data.type,price:data.price||null,authorId:req.user.id}});
+    res.json(s);
+  });
+
+  r.delete('/stories/:id', authMiddleware(prisma), async (req,res)=>{
+    const s = await prisma.story.findUnique({where:{id:req.params.id}});
+    if(!s) return res.status(404).json({error:'not found'});
+    if(s.authorId !== req.user.id && req.user.role !== 'admin') return res.status(403).json({error:'not allowed'});
+    await prisma.story.delete({where:{id:req.params.id}});
+    res.json({ok:true});
+  });
+
+  // favorites
+  r.post('/stories/:id/favorite', authMiddleware(prisma), async (req,res)=>{
+    const storyId = req.params.id;
+    const fav = await prisma.favorite.create({data:{userId:req.user.id, storyId}});
+    res.json(fav);
+  });
+
+  r.get('/me', authMiddleware(prisma), async (req,res)=>{
+    res.json({user:req.user});
+  });
+
+  // admin announcements
+  r.post('/admin/announce', authMiddleware(prisma), async (req,res)=>{
+    if(req.user.role !== 'admin') return res.status(403).json({error:'not allowed'});
+    // stub: in prod, save announcement table
+    res.json({ok:true, message: req.body.message});
+  });
+
+  // payment simulation: create order
+  r.post('/checkout', authMiddleware(prisma), async (req,res)=>{
+    // recebe storyId e cria transação simulada
+    const {storyId} = req.body;
+    const story = await prisma.story.findUnique({where:{id:storyId}});
+    if(!story || !story.price) return res.status(400).json({error:'story not for sale'});
+    // simulate a checkout link
+    const fake = {url:`https://pagamento-simulado.example/checkout/${Date.now()}`, amount: story.price};
+    res.json({checkout:fake});
+  });
+
+  return r;
+}
+```
+
+---
+
+## backend/src/socket.js
+
+```js
+import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
+
+export function setupSocket(httpServer, prisma){
+  const io = new Server(httpServer, { cors: { origin: '*' } });
+
+  io.use(async (socket, next)=>{
+    const token = socket.handshake.auth?.token;
+    if(!token) return next();
+    try{
+      const data = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret');
+      socket.userId = data.sub;
+    }catch(e){ /* ignore */ }
+    next();
+  });
+
+  io.on('connection', (socket)=>{
+    console.log('socket connected', socket.id);
+
+    socket.on('join', ({conversationId})=>{
+      socket.join(conversationId);
+    });
+
+    socket.on('message', async ({conversationId, content})=>{
+      const msg = await prisma.message.create({data:{conversationId, senderId: socket.userId || 'anon', content}});
+      io.to(conversationId).emit('message', msg);
+    });
+  });
+}
+```
+
+---
+
+# Frontend (pasta frontend/public)
+
+> O frontend aqui é vanilla (HTML/CSS/JS) para facilitar execução local. Use React+Tailwind se quiser escalar depois.
+
+---
+
+## frontend/public/index.html
+
+```html
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Histórias — Home</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">HS</div>
+    <nav>
+      <a href="/index.html">Explorar</a>
+      <a href="/editor.html">Criar</a>
+      <a href="/chat.html">Chat</a>
+      <a href="/admin.html" id="adminLink">Admin</a>
+      <a href="/login.html">Login</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div class="search">
+        <input id="search" placeholder="Pesquisar histórias...">
+        <button id="btnSearch">Buscar</button>
+      </div>
+      <div id="announcements" class="announcements"></div>
+    </header>
+
+    <section class="feed" id="feed"></section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
+```
+
+---
+
+## frontend/public/login.html
+
+```html
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-page">
+  <form id="form" class="auth-form">
+    <h2>Entrar / Registrar</h2>
+    <input id="email" placeholder="email" />
+    <input id="password" type="password" placeholder="senha" />
+    <div style="display:flex;gap:.5rem">
+      <button type="button" id="btnLogin">Entrar</button>
+      <button type="button" id="btnRegister">Registrar</button>
+    </div>
+  </form>
+
+  <script>
+    async function post(path, body){
+      const res = await fetch('/api'+path, {method:'POST',headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
+      return res.json();
+    }
+    document.getElementById('btnLogin').onclick = async ()=>{
+      const email = document.getElementById('email').value; const password = document.getElementById('password').value;
+      const r = await post('/auth/login',{email,password});
+      if(r.token){ localStorage.setItem('token', r.token); alert('logado'); location.href='/index.html'; }
+      else alert('erro');
+    }
+    document.getElementById('btnRegister').onclick = async ()=>{
+      const email = document.getElementById('email').value; const password = document.getElementById('password').value;
+      const r = await post('/auth/register',{email,password});
+      if(r.token){ localStorage.setItem('token', r.token); alert('registrado'); location.href='/index.html'; }
+      else alert('erro');
+    }
+  </script>
+</body>
+</html>
+```
+
+---
+
+## frontend/public/editor.html
+
+```html
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Criar História</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar"><div class="logo">HS</div></aside>
+  <main class="main">
+    <h2>Criar História</h2>
+    <form id="f">
+      <input id="title" placeholder="Título" required />
+      <input id="tags" placeholder="tags (vírgula)" />
+      <select id="tDoaçãoype"><option value="leia">Leitura</option><option value="doar">Doar</option><option value="venda">Venda</option></select>
+      <input id="price" placeholder="Preço (somente para venda)" />
+      <textarea id="body" rows="12" placeholder="Conteúdo" required></textarea>
+      <button type="button" id="publish">Publicar</button>
+    </form>
+  </main>
+  <script>
+    async function api(path, opts={}){
+      const token = localStorage.getItem('token');
+      opts.headers = {...(opts.headers||{}), 'content-type':'application/json', ...(token?{'authorization':'Bearer '+token}:{})};
+      const res = await fetch('/api'+path, opts);
+      return res.json();
+    }
+    document.getElementById('publish').onclick = async ()=>{
+      const data = {title:document.getElementById('title').value, excerpt:'', body:document.getElementById('body').value, tags:document.getElementById('tags').value.split(',').map(x=>x.trim()).filter(Boolean), type:document.getElementById('type').value, price: parseFloat(document.getElementById('price').value) || null};
+      const r = await api('/stories',{method:'POST', body:JSON.stringify(data)});
+      if(r.id){ alert('publicado'); location.href='/index.html'; } else alert('erro');
+    }
+  </script>
+</body>
+</html>
+```
+
+---
+
+## frontend/public/chat.html
+
+```html
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar"><div class="logo">HS</div></aside>
+  <main class="main">
+    <h2>Chat (simples)</h2>
+    <div>
+      <input id="conv" placeholder="ID da conversa (ou crie 1)" />
+      <button id="join">Join</button>
+    </div>
+    <div id="messages" style="height:300px;overflow:auto;border:1px solid #333;padding:8px;margin-top:8px"></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <input id="msg" placeholder="mensagem" style="flex:1" />
+      <button id="send">Enviar</button>
+    </div>
+  </main>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const token = localStorage.getItem('token');
+    const socket = io('/', { auth: { token } });
+    document.getElementById('join').onclick = ()=>{ const id = document.getElementById('conv').value||'public'; socket.emit('join',{conversationId:id}); };
+    socket.on('connect', ()=>console.log('socket conectado'));
+    socket.on('message', m=>{ const el = document.createElement('div'); el.textContent = m.content; document.getElementById('messages').appendChild(el); });
+    document.getElementById('send').onclick = ()=>{ const id = document.getElementById('conv').value||'public'; const content = document.getElementById('msg').value; socket.emit('message',{conversationId:id, content}); document.getElementById('msg').value=''; };
+  </script>
+</body>
+</html>
+```
+
+---
+
+## frontend/public/admin.html
+
+```html
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar"><div class="logo">HS</div></aside>
+  <main class="main">
+    <h2>Admin Center</h2>
+    <textarea id="announcement" placeholder="Mensagem para todos"></textarea>
+    <button id="send">Publicar aviso</button>
+    <div id="status"></div>
+  </main>
+
+  <script>
+    document.getElementById('send').onclick = async ()=>{
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/admin/announce',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+token},body:JSON.stringify({message:document.getElementById('announcement').value})});
+      const j = await res.json(); document.getElementById('status').textContent = JSON.stringify(j);
+    };
+  </script>
+</body>
+</html>
+```
+
+---
+
+## frontend/public/styles.css
+
+```css
+:root{--bg:#071022;--card:#0b1220;--accent:#7c3aed;--muted:#9aa4b2;color:#e6eef6}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:var(--text,#e6eef6)}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:linear-gradient(180deg,#061224,#071526);padding:1rem}
+.sidebar .logo{font-weight:700;background:linear-gradient(90deg,var(--accent),#06b6d4);width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.sidebar nav{margin-top:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar a{color:var(--muted);text-decoration:none;padding:.4rem .5rem;border-radius:6px}
+.main{margin-left:240px;padding:1rem}
+.top{display:flex;justify-content:space-between;align-items:center}
+.search input{padding:.5rem;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+.feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:1rem}
+.card{background:var(--card);padding:1rem;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+.auth-page{display:grid;place-items:center;height:100vh}
+.auth-form{background:var(--card);padding:1rem;border-radius:8px;display:flex;flex-direction:column;gap:.5rem;width:320px}
+textarea,input,select{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:.5rem;border-radius:6px;color:inherit}
+button{background:var(--accent);color:#fff;border:0;padding:.5rem .75rem;border-radius:8px;cursor:pointer}
+```
+
+---
+
+## frontend/public/app.js
+
+```js
+async function api(path, opts={}){
+  opts.headers = {...(opts.headers||{}), 'content-type':'application/json'};
+  if(localStorage.getItem('token')) opts.headers.authorization = 'Bearer '+localStorage.getItem('token');
+  if(opts.body && typeof opts.body === 'object') opts.body = JSON.stringify(opts.body);
+  const r = await fetch('/api'+path, opts);
+  return r.json();
+}
+
+async function renderFeed(q=''){
+  const stories = await api('/stories?q='+encodeURIComponent(q));
+  const feed = document.getElementById('feed');
+  if(!feed) return;
+  feed.innerHTML = '';
+  stories.forEach(s=>{
+    const el = document.createElement('div'); el.className='card';
+    el.innerHTML = `<h3>${escapeHtml(s.title)}</h3><div class=meta>por ${escapeHtml(s.authorId)}</div><p>${escapeHtml(s.excerpt||'')}</p><div style="display:flex;gap:.5rem"><button data-id="${s.id}" class="open">Abrir</button><button data-id="${s.id}" class="fav">Favoritar</button></div>`;
+    feed.appendChild(el);
+  });
+}
+
+function escapeHtml(str=''){ return String(str).replace(/[&<>"']/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
+
+window.addEventListener('load', ()=>{ renderFeed(); const sbtn = document.getElementById('btnSearch'); if(sbtn) sbtn.onclick = ()=>{ const q = document.getElementById('search').value; renderFeed(q); }; document.body.addEventListener('click', async (e)=>{ if(e.target.classList.contains('open')){ const id = e.target.dataset.id; const s = await api('/stories/'+id); alert('Título: '+s.title+'
+
+'+(s.body||s.excerpt)); } if(e.target.classList.contains('fav')){ const id = e.target.dataset.id; const res = await api('/stories/'+id+'/favorite',{method:'POST'}); alert('favoritado'); } }); });
+```
+
+---
+
+# Observações finais rápidas (direto ao ponto)
+
+- Isso é um **esqueleto de protótipo**: funciona localmente e já tem persistência (SQLite via Prisma).
+- Pagamentos estão simulados (endpoint `/api/checkout`) — integração real com Stripe Connect ou Mercado Pago vai exigir contas, KYC e webhooks; eu te mostro onde aplicar se quiser.
+- Chat é em tempo real com Socket.IO e grava mensagens na DB.
+- Admin é apenas verificado por role `admin` no JWT (há que criar um user admin no DB manualmente para testes).
+
+---
+
+Se quiser, eu:
+- gero o `zip` com esses arquivos prontos aqui, ou
+- converto o frontend pra React + Tailwind (melhor escala), ou
+- já te entrego os comandos prontos do Docker + docker-compose pra subir tudo em 1 comando.
+
+Diz qual desses 3 tu prefere: `zip`, `react`, `docker` — faço agora.

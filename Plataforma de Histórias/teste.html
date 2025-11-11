@@ -1,0 +1,322 @@
+<!-- Protótipo: Comunidade de Histórias
+     Arquivo único HTML/CSS/JS. Abra no navegador para testar.
+     Funcionalidades simuladas: listagem de histórias com selos (Leitura/Doação/Venda), busca, filtros, modal de envio, visualização de história, carrinho de compra simulado (Pix), acessibilidade básica e modo escuro.
+-->
+
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Histórias - Comunidade (Protótipo)</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#7c3aed; --glass: rgba(255,255,255,0.03);
+      --success:#16a34a; --danger:#ef4444;
+      font-synthesis: none;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial; background: linear-gradient(180deg,#071021 0%, #071526 60%); color:#e6eef6}
+    header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;gap:1rem}
+    .brand{display:flex;align-items:center;gap:.75rem}
+    .logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;color:#061224}
+    h1{font-size:1rem;margin:0}
+    .search{flex:1;max-width:640px;display:flex;background:var(--glass);padding:.5rem;border-radius:10px;align-items:center;gap:.5rem}
+    .search input{flex:1;background:transparent;border:0;color:inherit;padding:.5rem;outline:none}
+    .controls{display:flex;gap:.5rem}
+    button{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:.5rem .75rem;border-radius:8px;color:inherit;cursor:pointer}
+    main{display:grid;grid-template-columns:320px 1fr;padding:1rem;gap:1rem}
+    aside{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:1rem;border-radius:12px;height:calc(100vh - 120px);overflow:auto}
+    .filters h3{margin:.25rem 0 .75rem 0}
+    .badge{display:inline-block;padding:.25rem .5rem;border-radius:999px;font-size:.75rem}
+    .badge.leia{background:rgba(34,197,94,0.15);color:var(--success);border:1px solid rgba(34,197,94,0.12)}
+    .badge.doar{background:rgba(250,204,21,0.08);color:#f59e0b;border:1px solid rgba(250,204,21,0.12)}
+    .badge.venda{background:rgba(239,68,68,0.06);color:var(--danger);border:1px solid rgba(239,68,68,0.08)}
+
+    .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:1rem;border-radius:12px;border:1px solid rgba(255,255,255,0.03);min-height:160px;display:flex;flex-direction:column;gap:.5rem}
+    .card h4{margin:0;font-size:1rem}
+    .meta{display:flex;gap:.5rem;align-items:center;font-size:.85rem;color:var(--muted)}
+    .excerpt{flex:1;color:var(--muted);font-size:.92rem}
+    .actions{display:flex;gap:.5rem}
+
+    .topbar-actions{display:flex;gap:.5rem;align-items:center}
+
+    .story-view{background:linear-gradient(180deg,#041022 0%, #03101a 60%);padding:1rem;border-radius:12px;border:1px solid rgba(255,255,255,0.02);max-height:70vh;overflow:auto}
+
+    .uploader label{display:block;margin:.5rem 0 .25rem 0}
+    .field{display:flex;flex-direction:column}
+    .field input,.field select,.field textarea{background:transparent;border:1px dashed rgba(255,255,255,0.04);padding:.5rem;border-radius:8px;color:inherit;resize:vertical}
+    footer{padding:1rem;text-align:center;color:var(--muted);font-size:.9rem}
+
+    /* responsive */
+    @media (max-width:900px){main{grid-template-columns:1fr;padding:0.5rem} aside{display:none} header{flex-wrap:wrap}}
+
+    /* small helpers */
+    .pill{padding:.25rem .5rem;border-radius:999px;border:1px solid rgba(255,255,255,0.03);font-size:.8rem}
+
+    /* focus states */
+    input:focus,textarea:focus,select:focus,button:focus{outline:2px solid rgba(124,58,237,0.18);outline-offset:2px}
+
+    /* modal */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:1rem}
+    .modal.show{display:flex;background:linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.8));backdrop-filter: blur(4px)}
+    .modal .box{width:100%;max-width:720px;background:var(--card);padding:1rem;border-radius:12px}
+
+    /* small visual flair */
+    .glow{box-shadow:0 6px 24px rgba(124,58,237,0.08)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden>HS</div>
+      <div>
+        <h1>Histórias — comunidade</h1>
+        <div style="font-size:.8rem;color:var(--muted)">Compartilhe, doe ou venda suas narrativas</div>
+      </div>
+    </div>
+
+    <div class="search" role="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <input id="search" placeholder="buscar título, tag, autor..." />
+      <div class="topbar-actions">
+        <button id="btn-upload">+ novo</button>
+        <button id="toggle-theme">modo</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div class="profile">
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(90deg,#7c3aed,#06b6d4);"></div>
+          <div>
+            <div style="font-weight:600">Usuário (demo)</div>
+            <div style="font-size:.85rem;color:var(--muted)">Leitor • Autor</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:rgba(255,255,255,0.02);margin:1rem 0"></div>
+
+      <div class="filters">
+        <h3>Filtrar</h3>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          <label><input type="checkbox" data-filter="leia" checked /> Leitura livre</label>
+          <label><input type="checkbox" data-filter="doar" checked /> Doação</label>
+          <label><input type="checkbox" data-filter="venda" checked /> Venda</label>
+        </div>
+
+        <h3 style="margin-top:1rem">Gênero</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+          <button class="pill" data-tag="fantasia">Fantasia</button>
+          <button class="pill" data-tag="ficcao">Ficção</button>
+          <button class="pill" data-tag="romance">Romance</button>
+          <button class="pill" data-tag="terror">Terror</button>
+          <button class="pill" data-tag="sci-fi">Sci‑Fi</button>
+        </div>
+
+      </div>
+
+      <div style="margin-top:1rem;font-size:.9rem;color:var(--muted)">
+        <strong>Diferencial:</strong>
+        <div>Seedbox de ideias - pequenos prompts/trechos pra inspirar</div>
+      </div>
+
+    </aside>
+
+    <section>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <div class="pill">Explorar</div>
+          <div style="color:var(--muted);font-size:.9rem">Mostrando <span id="count">0</span> histórias</div>
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <select id="sort">
+            <option value="recent">Mais recentes</option>
+            <option value="popular">Mais populares</option>
+            <option value="cheap">Mais baratas</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="list" id="list"></div>
+
+      <div style="height:1rem"></div>
+
+      <div class="story-view" id="storyView" aria-live="polite" hidden>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><h3 id="sv-title">Título</h3><div id="sv-meta" style="color:var(--muted)"></div></div>
+          <div style="display:flex;gap:.5rem"><button id="sv-close">Fechar</button></div>
+        </div>
+        <hr style="border:none;height:1px;background:rgba(255,255,255,0.02);margin:.5rem 0"/>
+        <article id="sv-body" style="line-height:1.8;color:#d9e6f6"></article>
+        <div style="margin-top:1rem;display:flex;gap:.5rem">
+          <button id="likeBtn">Curtir</button>
+          <button id="donateBtn">Doar</button>
+          <button id="buyBtn">Comprar</button>
+        </div>
+        <div id="purchaseBox" style="margin-top:1rem;display:none;background:rgba(255,255,255,0.02);padding:.75rem;border-radius:8px">
+          <div style="font-size:.95rem">Pagamento (simulado)</div>
+          <div style="margin-top:.5rem">PIX: <strong id="pixCode">000201abcd...</strong></div>
+          <div style="margin-top:.5rem;color:var(--muted);font-size:.9rem">Status: <span id="pixStatus">Aguardando</span></div>
+          <div style="margin-top:.5rem"><button id="confirmPay">Simular pagamento</button></div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>
+    Protótipo — abra o modal “+ novo” pra testar upload. Feito rápido pra demonstrar UX e lógica front.
+  </footer>
+
+  <!-- modal uploader -->
+  <div class="modal" id="modal">
+    <div class="box">
+      <h2>Enviar história</h2>
+      <div class="uploader">
+        <div class="field">
+          <label>Título</label>
+          <input id="f-title" placeholder="Ex: A cidade sem luar" />
+        </div>
+        <div class="field">
+          <label>Tipo</label>
+          <select id="f-type">
+            <option value="leia">Leitura Livre</option>
+            <option value="doar">Doação</option>
+            <option value="venda">Venda</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tags (vírgula)</label>
+          <input id="f-tags" placeholder="fantasia, aventura" />
+        </div>
+        <div class="field">
+          <label>Sinopse</label>
+          <input id="f-excerpt" placeholder="Breve sinopse" />
+        </div>
+        <div class="field">
+          <label>Conteúdo</label>
+          <textarea id="f-body" rows="8" placeholder="Escreve aqui..."></textarea>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:.75rem">
+          <button id="f-submit">Publicar</button>
+          <button id="f-cancel">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // dados iniciais de demonstração
+    const stories = [
+      {id:1,title:'A lâmina e o lago',type:'venda',tags:['fantasia','aventura'],excerpt:'Uma lâmina que sussurra segredos ao luar.',author:'Marcos',body:'Era uma vez... (trecho da história).',price:9.90,likes:12},
+      {id:2,title:'Cartas para a cidade',type:'leia',tags:['romance'],excerpt:'Cartas antigas reescrevem destinos.',author:'Ana',body:'As cartas estavam amassadas...'},
+      {id:3,title:'Sementes de Neon',type:'doar',tags:['sci-fi'],excerpt:'Micro-contos e ideias pra quem quer começar.',author:'Tarcianne',body:'Uma cidade luminosa onde...'},
+      {id:4,title:'A última tempestade',type:'venda',tags:['ficcao','clima'],excerpt:'Relato pós-apocalíptico de quem ficou.',author:'Lu',body:'O céu desabou...',price:4.5,likes:4}
+    ];
+
+    // estado
+    let state = {query:'',filters:{leia:true,doar:true,venda:true},selectedTag:null}
+
+    const el = (id)=>document.getElementById(id);
+    const listEl = el('list');
+    const countEl = el('count');
+
+    function render(){
+      const q = state.query.toLowerCase();
+      let filtered = stories.filter(s=>{
+        if(!state.filters[s.type]) return false;
+        if(state.selectedTag && !s.tags.includes(state.selectedTag)) return false;
+        if(!q) return true;
+        return (s.title+s.excerpt+(s.tags||[]).join(' ')+ (s.author||'')).toLowerCase().includes(q);
+      });
+      countEl.textContent = filtered.length;
+      listEl.innerHTML = '';
+      filtered.forEach(s=>{
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:start">
+            <div>
+              <h4>${escapeHtml(s.title)}</h4>
+              <div class="meta">por ${escapeHtml(s.author || 'anon') } • <span class="pill">${(s.tags||[]).join(', ')}</span></div>
+            </div>
+            <div style="text-align:right">
+              ${s.type==='leia'?'<span class="badge leia">Leitura</span>':''}
+              ${s.type==='doar'?'<span class="badge doar">Doação</span>':''}
+              ${s.type==='venda'?'<span class="badge venda">Venda</span>':''}
+              ${s.price?`<div style="margin-top:.5rem;font-weight:600">R$ ${Number(s.price).toFixed(2)}</div>`:''}
+            </div>
+          </div>
+          <div class="excerpt">${escapeHtml(s.excerpt)}</div>
+          <div class="actions" style="margin-top:.5rem">
+            <button data-open="${s.id}">Abrir</button>
+            <button data-like="${s.id}">Curtir (${s.likes||0})</button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    // utils
+    function escapeHtml(str=''){ return String(str).replace(/[&<>"']/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
+
+    // eventos básicos
+    el('search').addEventListener('input',(e)=>{ state.query = e.target.value; render(); });
+    document.querySelectorAll('[data-filter]').forEach(cb=>cb.addEventListener('change', (e)=>{ const t=e.target.getAttribute('data-filter'); state.filters[t]=e.target.checked; render(); }));
+    document.querySelectorAll('.pill[data-tag]').forEach(b=>b.addEventListener('click', (e)=>{ const tag = e.target.getAttribute('data-tag'); state.selectedTag = state.selectedTag===tag?null:tag; render(); }));
+
+    // modal controls
+    const modal = el('modal');
+    el('btn-upload').addEventListener('click', ()=>{ modal.classList.add('show'); el('f-title').focus(); });
+    el('f-cancel').addEventListener('click', ()=>{ modal.classList.remove('show'); });
+
+    el('f-submit').addEventListener('click', ()=>{
+      const t = el('f-title').value.trim();
+      if(!t) { alert('Título é obrigatório'); return; }
+      const newS = {id:Date.now(), title:t, type:el('f-type').value, tags:el('f-tags').value.split(',').map(x=>x.trim()).filter(Boolean), excerpt:el('f-excerpt').value, body:el('f-body').value, author:'Você'};
+      if(newS.type==='venda') newS.price = Math.round((Math.random()*20+1)*100)/100;
+      stories.unshift(newS);
+      modal.classList.remove('show');
+      // limpar
+      el('f-title').value=''; el('f-tags').value=''; el('f-excerpt').value=''; el('f-body').value='';
+      render();
+    });
+
+    // delegação pra abrir/like
+    listEl.addEventListener('click', (e)=>{
+      if(e.target.dataset.open){ openStory(Number(e.target.dataset.open)); }
+      if(e.target.dataset.like){ const id=Number(e.target.dataset.like); const s=stories.find(x=>x.id===id); s.likes = (s.likes||0)+1; render(); }
+    });
+
+    // abrir história
+    function openStory(id){
+      const s = stories.find(x=>x.id===id); if(!s) return;
+      el('sv-title').textContent = s.title;
+      el('sv-meta').textContent = `por ${s.author || 'anon'} • ${s.tags.join(', ')} • ${s.type}`;
+      el('sv-body').textContent = s.body || s.excerpt || '(sem conteúdo)';
+      el('storyView').hidden = false;
+      el('likeBtn').onclick = ()=>{ s.likes=(s.likes||0)+1; alert('Você curtiu'); render(); }
+      el('donateBtn').onclick = ()=>{ alert('Obrigado! função de doação simulada.'); }
+      el('buyBtn').onclick = ()=>{
+        if(s.type!=='venda'){ alert('Essa história não está à venda.'); return; }
+        el('pixCode').textContent = genPix(); el('purchaseBox').style.display='block'; el('pixStatus').textContent='Aguardando';
+        el('confirmPay').onclick = ()=>{ el('pixStatus').textContent='Pago'; alert('Pagamento simulado recebido. Obrigado!'); }
+      }
+    }
+    el('sv-close').addEventListener('click', ()=>{ el('storyView').hidden=true; el('purchaseBox').style.display='none'; });
+
+    function genPix(){ return '00020126...'+Math.floor(Math.random()*999999); }
+
+    // theme toggle (simples)
+    let dark = true;
+    el('toggle-theme').addEventListener('click', ()=>{ dark=!dark; document.body.style.background = dark? 'linear-gradient(180deg,#071021 0%, #071526 60%)' : '#f6f9fc'; document.body.style.color = dark? '#e6eef6':'#071021'; });
+
+    // initial render
+    render();
+  </script>
+</body>
+</html>
