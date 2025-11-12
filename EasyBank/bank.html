@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EasyBank — App Demo</title>
+<meta name="description" content="EasyBank — App demo" />
+<style>
+  :root{
+    --green-1: #00e07a;
+    --green-2: #00c86a;
+    --bg-dark:#07120e;
+    --muted:#dff8ee;
+    --panel: rgba(255,255,255,0.03);
+    --radius:14px;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background: linear-gradient(180deg,var(--bg-dark),#04120a);color:var(--muted);-webkit-font-smoothing:antialiased}
+  .container{max-width:420px;margin:22px auto;border-radius:22px;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 30px 80px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03)}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(90deg, rgba(0,0,0,0.04), transparent)}
+  .brand{display:flex;gap:12px;align-items:center}
+.logo-small{
+  width:48px;
+  height:48px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+  .content{padding:16px;min-height:560px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:14px;border-radius:12px;border:1px solid var(--panel);margin-bottom:12px}
+  .balance{display:flex;align-items:center;justify-content:space-between}
+  .amount{font-size:28px;font-weight:800;color:var(--green-1)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .action{padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);cursor:pointer;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:6px;min-width:92px;text-align:center}
+  .action .ic{font-size:20px;color:var(--green-1)}
+  .nav{position:sticky;bottom:0;padding:12px 16px;background:linear-gradient(180deg, transparent, rgba(0,0,0,0.06));display:flex;gap:8px;justify-content:space-between}
+  .nav .item{flex:1;text-align:center;padding:10px;border-radius:10px;background:transparent;cursor:pointer;color:var(--muted)}
+  .nav .item.active{background:linear-gradient(90deg,var(--green-1),var(--green-2));color:#04120a;font-weight:800}
+  /* pages */
+  .page{display:none;opacity:0;transform:translateY(8px);transition:all .28s ease}
+  .page.active{display:block;opacity:1;transform:none}
+  /* inputs */
+  .field{display:flex;flex-direction:column;gap:6px}
+  input[type="text"],input[type="number"]{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:10px;border-radius:8px;color:var(--muted);outline:none}
+  input:focus{box-shadow:0 0 0 8px rgba(0,224,122,0.06);border-color:var(--green-2)}
+  .mono{font-family:ui-monospace,monospace}
+  /* QR */
+  .qr{width:180px;height:180px;border-radius:12px;background:linear-gradient(180deg,rgba(0,0,0,0.35),rgba(255,255,255,0.02));display:flex;align-items:center;justify-content:center;margin:auto;color:var(--muted);border:6px solid rgba(0,224,122,0.06)}
+  .hint{font-size:13px;color:rgba(255,255,255,0.72)}
+  /* small */
+  @media (max-width:420px){
+    .content{padding:14px}
+    .amount{font-size:24px}
+  }
+</style>
+</head>
+<body>
+  <div class="container" role="application" aria-label="EasyBank app demo">
+    <header>
+       <div class="logo-small">
+          <img src="WhatsApp Image 2025-11-12 at 11.28.01.jpeg" alt="Logo" style="width:100%;height:100%;border-radius:12px;">
+        </div>
+
+      <div class="brand">
+        <div>
+          <div style="font-weight:800">EasyBank</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.75)">Conta Demo</div>
+        </div>
+      </div>
+      <div>
+        <button id="btnHome" title="Voltar ao site" style="background:transparent;border:0;color:var(--muted);cursor:pointer">🏠</button>
+      </div>
+    </header>
+
+    <main class="content" id="main">
+      <!-- HOME -->
+      <section id="home" class="page active" aria-labelledby="homeTitle">
+        <div class="card balance">
+          <div>
+            <div class="hint">Saldo disponível</div>
+            <div class="amount mono" id="balance">R$ 2.350,00</div>
+            <div class="hint" style="font-size:13px;margin-top:6px">Conta • 0001</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+            <button id="btnAdd" class="action" style="min-width:110px; padding:8px 10px">Adicionar</button>
+          </div>
+
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>Ações</strong><div class="hint" style="font-size:13px">Toque para abrir</div></div>
+          </div>
+          <div class="actions" style="margin-top:12px">
+            <div class="action" data-page="pix"><div class="ic">💸</div><div>PIX</div></div>
+            <div class="action" data-page="transfer"><div class="ic">➡️</div><div>Transferir</div></div>
+            <div class="action" data-page="card"><div class="ic">💳</div><div>Cartão</div></div>
+            <div class="action" data-page="payments"><div class="ic">🧾</div><div>Pagamentos</div></div>
+            <div class="action" data-page="history"><div class="ic">📜</div><div>Histórico</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin:0">Resumo</h3>
+          <div style="margin-top:10px" class="hint">
+            <div>02/11/2025 — PIX recebido — +R$ 500,00</div>
+            <div>30/10/2025 — Supermercado — -R$ 120,00</div>
+            <div>28/10/2025 — Transferência — -R$ 80,00</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PIX -->
+      <section id="pix" class="page" aria-labelledby="pixTitle">
+        <div class="card">
+          <h3 id="pixTitle">PIX — Enviar</h3>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;align-items:center">
+            <div style="flex:1">
+              <label class="hint">Valor</label>
+              <input id="pixVal" type="number" placeholder="Ex: 100.00" />
+            </div>
+            <div style="flex-basis:220px">
+              <label class="hint">Método</label>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button id="pixQr" class="action">QR Code</button>
+                <button id="pixCopy" class="action">Copiar código</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="pixArea" style="margin-top:16px"></div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:12px">
+            <button class="action" id="pixBack">Voltar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRANSFER -->
+      <section id="transfer" class="page" aria-labelledby="trTitle">
+        <div class="card">
+          <h3 id="trTitle">Transferir</h3>
+          <div style="margin-top:12px">
+            <div class="field"><label class="hint">Conta / CPF</label><input id="trTo" type="text" /></div>
+            <div class="field" style="margin-top:10px"><label class="hint">Valor</label><input id="trVal" type="number" /></div>
+            <div class="field" style="margin-top:10px"><label class="hint">Observação</label><input id="trNote" type="text" /></div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+              <button class="action" id="trBack">Voltar</button>
+              <button class="action" id="trSend" style="background:linear-gradient(90deg,var(--green-1),var(--green-2));color:#04120a">Enviar</button>
+            </div>
+            <div id="trRes" style="margin-top:10px" class="hint"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CARD -->
+      <section id="card" class="page" aria-labelledby="cardTitle">
+        <div class="card">
+          <h3 id="cardTitle">Cartão virtual</h3>
+          <div style="margin-top:10px" class="hint">Número: **** •••• •••• 1234 • Válido até 12/28</div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+            <button class="action" id="cardBack">Voltar</button>
+            <button class="action" id="cardBlock" style="background:linear-gradient(90deg,var(--green-1),var(--green-2));color:#04120a">Bloquear</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAYMENTS -->
+      <section id="payments" class="page" aria-labelledby="payTitle">
+        <div class="card">
+          <h3 id="payTitle">Pagamentos</h3>
+          <div style="margin-top:12px" class="hint">
+            <div>Boleto — Venc: 05/12/2025 — R$ 320,00</div>
+            <div>Assinatura — MusicPlus — R$ 19,90</div>
+            <div>Recarga — Celular — R$ 30,00</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px">
+            <button class="action" id="paymentsBack">Voltar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- HISTORY -->
+      <section id="history" class="page" aria-labelledby="histTitle">
+        <div class="card">
+          <h3 id="histTitle">Histórico</h3>
+          <div style="margin-top:12px" class="hint">
+            <div>02/11/2025 — PIX recebido — +R$ 500,00</div>
+            <div>30/10/2025 — Supermercado — -R$ 120,00</div>
+            <div>28/10/2025 — Transferência — -R$ 80,00</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px">
+            <button class="action" id="historyBack">Voltar</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="nav" role="navigation" aria-label="Navegação">
+      <div class="item active" data-page="home">Início</div>
+      <div class="item" data-page="pix">PIX</div>
+      <div class="item" data-page="transfer">Transferir</div>
+      <div class="item" data-page="card">Cartão</div>
+      <div class="item" data-page="history">Histórico</div>
+    </nav>
+  </div>
+
+<script>
+/* App logic: routing between pages + functional buttons + small sounds */
+
+// simple state
+let state = { balance: 2350.00 };
+
+// util: format BRL
+function fmt(v){ return 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// elements
+const pages = { home: document.getElementById('home'), pix: document.getElementById('pix'), transfer: document.getElementById('transfer'), card: document.getElementById('card'), payments: document.getElementById('payments'), history: document.getElementById('history') };
+const navItems = document.querySelectorAll('.nav .item');
+const actionBtns = document.querySelectorAll('.action[data-page]');
+const balanceEl = document.getElementById('balance');
+
+// show page
+function show(page){
+  Object.values(pages).forEach(p => p.classList.remove('active'));
+  if(pages[page]) pages[page].classList.add('active');
+  navItems.forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  playTrans();
+}
+
+// wire bottom nav
+navItems.forEach(it => it.addEventListener('click', ()=> show(it.dataset.page)));
+// wire action grid
+actionBtns.forEach(b => b.addEventListener('click', ()=> show(b.dataset.page)));
+
+// back buttons
+['pixBack','trBack','cardBack','paymentsBack','historyBack'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('click', ()=> show('home'));
+});
+
+// go back to site (open index in same tab)
+document.getElementById('btnHome').addEventListener('click', ()=>{
+  window.location.href = 'index.html';
+});
+
+// small audio feedback
+const actx = new (window.AudioContext||window.webkitAudioContext)();
+function playClick(){
+  if(actx.state==='suspended') actx.resume();
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type='sine'; o.frequency.value=1100; g.gain.value=0.02;
+  o.connect(g); g.connect(actx.destination);
+  o.start(); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.06); o.stop(actx.currentTime + 0.07);
+}
+function playTrans(){
+  if(actx.state==='suspended') actx.resume();
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type='triangle'; o.frequency.value=520; g.gain.value=0.03;
+  o.connect(g); g.connect(actx.destination);
+  o.start(); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.09); o.stop(actx.currentTime + 0.1);
+}
+
+// PIX QR
+document.getElementById('pixQr').addEventListener('click', ()=>{
+  const v = Number(document.getElementById('pixVal').value) || 100;
+  const area = document.getElementById('pixArea');
+  area.innerHTML = '<div class="qr" role="img" aria-label="QR code simulado">QR CODE<br><small class="hint">R$ '+ v.toFixed(2) +'</small></div>';
+  playClick();
+});
+// PIX copy
+document.getElementById('pixCopy').addEventListener('click', async ()=>{
+  const v = Number(document.getElementById('pixVal').value) || 100;
+  const code = 'PIX|EASYBANK|'+(Math.random()+1).toString(36).slice(2,10).toUpperCase()+'|'+v.toFixed(2);
+  try {
+    await navigator.clipboard.writeText(code);
+    alert('Código copiado:\n' + code);
+  } catch(e){
+    prompt('Código (copie manual):', code);
+  }
+  playClick();
+});
+
+// Transfer: send reduces balance
+document.getElementById('trSend').addEventListener('click', ()=>{
+  const to = document.getElementById('trTo').value.trim();
+  const val = Number(document.getElementById('trVal').value);
+  if(!to || !val || val <= 0){ alert('Preencha corretamente'); return; }
+  if(val > state.balance){ alert('Saldo insuficiente'); return; }
+  state.balance = +(state.balance - val).toFixed(2);
+  balanceEl.textContent = fmt(state.balance);
+  document.getElementById('trRes').textContent = 'Transferência enviada para ' + to + ' • - ' + fmt(val);
+  playClick();
+});
+
+// Add / top-up: add small amount
+document.getElementById('btnAdd').addEventListener('click', ()=>{
+  const add = 100.00;
+  state.balance = +(state.balance + add).toFixed(2);
+  balanceEl.textContent = fmt(state.balance);
+  playClick();
+  alert('Saldo aumentado em ' + fmt(add) + ' (simulado)');
+});
+
+// Card block
+document.getElementById('cardBlock').addEventListener('click', ()=>{
+  alert('Cartão bloqueado (simulação).');
+  playClick();
+});
+
+// init
+document.addEventListener('DOMContentLoaded', ()=>{
+  balanceEl.textContent = fmt(state.balance);
+  show('home');
+});
+</script>
+</body>
+</html>

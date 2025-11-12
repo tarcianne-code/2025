@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EasyBank — Simulador</title>
+<meta name="description" content="EasyBank — banco digital. Site institucional + demo do app." />
+<style>
+  :root{
+    --green-1: #00e07a; /* principal (igual à landing original) */
+    --green-2: #00c86a;
+    --accent-dark:#04120a;
+    --muted-dark: rgba(4,18,10,0.82);
+    --glass: rgb(255, 255, 255);
+    --radius:18px;
+    --maxw:1100px;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(800px 320px at 10% 10%, rgba(0,0,0,0.06), transparent),
+      linear-gradient(135deg,var(--green-1),var(--green-2));
+    color:var(--accent-dark);
+    padding:28px;
+  }
+  .wrap{
+    width:100%;
+    max-width:var(--maxw);
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.94));
+    border-radius:20px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.18);
+    display:grid;
+    grid-template-columns: 520px 1fr;
+    overflow:hidden;
+  }
+  @media(max-width:920px){ .wrap{grid-template-columns:1fr} .left{padding:36px} .right{padding:20px} }
+
+  /* LEFT (hero) */
+  .left{
+    padding:48px;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+    justify-content:center;
+  }
+  .logo-wrap{
+    width:160px;height:160px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background: #1b4a2b; padding:8px; box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+  }
+  .logo-wrap img{width:100%;height:100%;object-fit:contain;display:block}
+
+  h1{margin:0;font-size:30px;line-height:1.03;color:var(--accent-dark)}
+  p.lead{margin:0;color:var(--muted-dark);font-size:15.5px;line-height:1.5}
+  .cta{display:flex;gap:12px;align-items:center;margin-top:6px}
+
+  .btn{
+    padding:12px 16px;border-radius:12px;border:0;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:10px;text-decoration:none;
+  }
+  .btn.primary{
+    background: linear-gradient(90deg,var(--green-1),var(--green-2));
+    color:white; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .btn.primary:hover{ transform: translateY(-4px); box-shadow: 0 18px 50px rgba(0,0,0,0.16); }
+  .btn.ghost{ background:transparent;border:1px solid rgba(4,18,10,0.06); color:var(--accent-dark) }
+
+  .features{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+  .feature{display:flex;gap:12px;align-items:center;padding:12px;border-radius:12px;background:rgba(255,255,255,0.96);border:1px solid rgba(0,0,0,0.04)}
+  .icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#fff,#f2fff7);display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--green-2)}
+
+  /* RIGHT (details + demo preview) */
+  .right{
+    padding:42px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.94));
+  }
+  .card{
+    background: linear-gradient(180deg, rgba(4,18,10,0.86), rgba(4,18,10,0.82));
+    color: #dff8ee;
+    padding:18px;
+    border-radius:12px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    border:1px solid rgba(255,255,255,0.02);
+  }
+  .card h3{margin:0;color: #bff9d6}
+  .card p{margin-top:8px;color: #d7f7e4}
+
+  .preview{
+    margin-top:12px;
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+  .phone{
+    width:110px;height:220px;border-radius:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));
+    display:flex;align-items:center;justify-content:center;color:#fff;border:6px solid rgba(255,255,255,0.02)
+  }
+  footer{padding:14px;text-align:center;color:rgba(4,18,10,0.6)}
+
+  /* small helpers */
+  .muted{color:rgba(255,255,255,0.8)}
+  .sep{height:1px;background:linear-gradient(90deg,rgba(0,0,0,0.02),rgba(255,255,255,0.02));margin:10px 0}
+</style>
+</head>
+<body>
+  <div class="wrap" role="main" aria-label="EasyBank landing">
+    <div class="left" aria-labelledby="title">
+      <div class="logo-wrap" aria-hidden="true">
+        <!-- Embedded stylized logo (uses same green family) -->
+        <img alt="EasyBank logo" src='WhatsApp Image 2025-11-12 at 11.28.01.jpeg' />
+      </div>
+
+      <h1 id="title">EasyBank — banco digital simplificado</h1>
+      <p class="lead">Contas, PIX, cartão virtual e pagamentos em um app com design limpo e intuitivo. O EasyBank entrega velocidade e controle sem complicação — feito pra quem quer resolver finanças no tempo certo.</p>
+
+      <div class="cta">
+        <!-- abre nova aba conforme pedido -->
+        <a class="btn primary" id="openBank" href="bank.html" target="_blank" rel="noopener noreferrer">Acessar o Banco</a>
+        <a class="btn ghost" href="#sobre">Saiba mais</a>
+      </div>
+
+      <div class="features" aria-hidden="true">
+        <div class="feature"><div class="icon">⚡</div><div><strong>Rápido</strong><div style="font-size:13px;color:#0b2b1a">Operações simplificadas</div></div></div>
+        <div class="feature"><div class="icon">🔒</div><div><strong>Seguro</strong><div style="font-size:13px;color:#0b2b1a">Privacidade & proteção</div></div></div>
+        <div class="feature"><div class="icon">💳</div><div><strong>Cartão</strong><div style="font-size:13px;color:#0b2b1a">Virtual controlável</div></div></div>
+        <div class="feature"><div class="icon">🌱</div><div><strong>Transparente</strong><div style="font-size:13px;color:#0b2b1a">Sem surpresas</div></div></div>
+      </div>
+    </div>
+
+    <div class="right" aria-live="polite">
+      <div class="card" id="sobre">
+        <h3>Sobre o EasyBank</h3>
+        <p>EasyBank é um protótipo de banco digital pensado para demonstrações e apresentações. Mesclamos simplicidade com estética moderna para que operações do dia a dia fiquem acessíveis a qualquer usuário — com foco em clareza, velocidade e segurança.</p>
+        <div class="sep"></div>
+        <div class="preview">
+          <div class="phone" aria-hidden="true">APP</div>
+          <div style="flex:1">
+            <div style="font-weight:800;color:#e6ffee">Saldo demo</div>
+            <div style="margin-top:6px;color:#c6f9d8">R$ 2.350,00 • Conta demo</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Nossa proposta</h3>
+        <p>Oferecer ferramentas essenciais: transferências, recebimentos por PIX, controle de cartão virtual e pagamento de contas — tudo com interface simples e direta.</p>
+      </div>
+
+      <div class="card">
+        <h3>Teste o app</h3>
+        <p class="muted">Clique em <strong>Acessar o Banco</strong> para abrir o app em outra aba (simulado). O demo é offline e não faz transações reais.</p>
+      </div>
+
+      <footer>
+        <div class="muted">EasyBank • Protótipo educacional — não é uma instituição financeira real.</div>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
